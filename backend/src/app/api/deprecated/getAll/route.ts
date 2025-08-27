@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { Database } from '../../../util/supabase-types'
+import { Database } from '../../../../util/supabase-types'
 import { createClient } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server'
-
 // Create a single supabase client for interacting with your database
 const supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,28 +24,13 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-        const excludeIdsParam = searchParams.get('excludeIds');
-        
-        let query = supabase
+        const { data, error } = await supabase
             .from('Canvas')
             .select('*')
-            .order('updatedAt', { ascending: true });
-            
-        // If excludeIds are provided, filter them out
-        if (excludeIdsParam) {
-            const excludeIds = excludeIdsParam.split(',').filter(id => id.trim());
-            if (excludeIds.length > 0) {
-                query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-            }
-        }
-        
-        const { data, error } = await query.limit(2);
-            
+            .limit(1);
         if (error) {
             throw new Error(error.message);
         }
-        
         return NextResponse.json({data}, {
             headers: corsHeaders
         });
@@ -54,4 +38,4 @@ export async function GET(req: NextRequest) {
         console.log('error:', error);
         return NextResponse.json({ error: 'Invalid request data' }, { status: 400, headers: corsHeaders });
     }
-} 
+}
