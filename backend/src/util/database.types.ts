@@ -54,7 +54,7 @@ export type Database = {
           elo?: number
           gen_img_src?: string | null
           id?: string
-          product_ids?: string[]
+          product_ids: string[]
           title: string
           uid: number
           user_name: string
@@ -77,21 +77,21 @@ export type Database = {
       User: {
         Row: {
           created_at: string
-          friends: string[]
+          friends: number[]
           id: string
           uid: number
           user_name: string
         }
         Insert: {
           created_at?: string
-          friends?: string[]
+          friends?: number[]
           id?: string
           uid: number
           user_name: string
         }
         Update: {
           created_at?: string
-          friends?: string[]
+          friends?: number[]
           id?: string
           uid?: number
           user_name?: string
@@ -106,16 +106,17 @@ export type Database = {
       get_two_candidates: {
         Args: { end_ts: string; start_ts: string }
         Returns: {
-          canvas_src: string | null
-          created_at: string
-          elo: number
-          gen_img_src: string | null
+          gen_img_src: string
           id: string
-          product_ids: string[]
           title: string
-          uid: number
-          user_name: string
-          vote_count: number
+        }[]
+      }
+      update_elo_after_vote: {
+        Args: { loser_id: string; winner_id: string }
+        Returns: {
+          id: string
+          new_elo: number
+          new_vote_count: number
         }[]
       }
     }

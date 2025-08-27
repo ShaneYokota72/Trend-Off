@@ -1,24 +1,11 @@
-import React, {useState} from 'react'
+import {useContext, useEffect, useState} from 'react'
 import { DragEndEvent } from '@dnd-kit/core'
 import { WhiteboardCanvas, WhiteboardItem } from './WhiteboardCanvas'
-import { useProductSearch } from '@shopify/shop-minis-react'
+import { IconButton, Input, Product, ProductCard, useImageUpload, useProductSearch } from '@shopify/shop-minis-react'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
-
-interface SearchImage {
-  id: string
-  url: string
-  alt: string
-}
-
-// Dummy images from Unsplash for demo (fallback)
-const dummyImages: SearchImage[] = [
-  { id: '1', url: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=150&h=150&fit=crop', alt: 'Concert dress' },
-  { id: '2', url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=150&h=150&fit=crop', alt: 'Fashion boots' },
-  { id: '3', url: 'https://images.unsplash.com/photo-1506629905607-62b39f7a0b73?w=150&h=150&fit=crop', alt: 'Leather jacket' },
-  { id: '4', url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=150&h=150&fit=crop', alt: 'Band t-shirt' },
-  { id: '5', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=150&h=150&fit=crop', alt: 'Sunglasses' },
-  { id: '6', url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=150&h=150&fit=crop', alt: 'Denim jeans' },
-]
+import { TrendOffContext } from '../../context/TrendOffContext'
+import { CircleAlert, X } from 'lucide-react'
+import { Sheet } from 'react-modal-sheet'
 
 export function Whiteboard() {
   const [items, setItems] = useState<WhiteboardItem[]>([])
@@ -26,6 +13,8 @@ export function Whiteboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const { todayPrompt, setCanvasImgSrc } = useContext(TrendOffContext)
+  const { uploadImage } = useImageUpload()
   const navigation = useNavigateWithTransition()
 
   // Use the Shopify product search hook
@@ -34,13 +23,7 @@ export function Whiteboard() {
     first: 20,
   })
 
-  const handleGoBack = () => {
-    document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.backward);
-    navigation(-1)
-  }
-
-  // Alternative canvas capture method using native Canvas API
-  const captureCanvasAlternative = async (): Promise<string> => {
+  const screenShotCanvas = async (): Promise<string> => {
     const canvasElement = document.querySelector('[data-whiteboard-canvas]') as HTMLElement
     if (!canvasElement) return ''
 
@@ -51,7 +34,7 @@ export function Whiteboard() {
       if (!ctx) return ''
 
       // Set canvas size
-      canvas.width = 400
+      canvas.width = window.innerWidth
       canvas.height = 560
 
       // Fill white background
@@ -109,32 +92,26 @@ export function Whiteboard() {
     }
   }
 
+  const handleGoBack = () => {
+    document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.backward);
+    navigation(-1)
+  }
+
   const handleNext = async () => {
-    console.log('Starting canvas capture...')
-    const canvasImage = await captureCanvasAlternative()
-    
-    console.log('Canvas image captured:', !!canvasImage)
-    console.log('Image length:', canvasImage.length)
-  
-    // Store canvas image and product IDs immediately
-    if (canvasImage) {
-      try {
-        sessionStorage.setItem('canvasImage', canvasImage)
-        sessionStorage.setItem('generationStatus', 'pending')
-        
-        // Extract and store product IDs from whiteboard items
-        const productIds = items.map(item => item.productId).filter(id => id !== 'dummy') // Filter out dummy image IDs
-        sessionStorage.setItem('productIds', JSON.stringify(productIds))
-        console.log('Canvas image and product IDs stored in sessionStorage', productIds)
+    try {
+      const canvasImage = await screenShotCanvas();
+      console.log('Captured whiteboard image:', canvasImage);
 
-        // Start AI generation asynchronously (don't await)
-        generateAIImage(canvasImage)
+      const result = await uploadImage([
+        {
+          mimeType: 'image/png',
+          uri: canvasImage,
+        },
+      ])
 
-      } catch (error) {
-        console.error('Failed to store image in sessionStorage:', error)
-      }
-    } else {
-      console.error('No canvas image to store')
+      if(result[0]?.imageUrl) setCanvasImgSrc(result[0].imageUrl)
+    } catch (error) {
+      console.error('Failed to capture whiteboard:', error);
     }
     
     // Navigate to judging immediately
@@ -142,7 +119,6 @@ export function Whiteboard() {
     navigation('/judging');
   }
 
-  // Separate async function for AI generation
   const generateAIImage = async (canvasImage: string) => {
     try {
       const response = await fetch('http://localhost:8080/api/img2img', {
@@ -171,36 +147,10 @@ export function Whiteboard() {
     }
   }
 
-  const handleSearchSubmit = () => {
-    setSubmittedQuery(searchQuery)
-  }
-
-  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearchSubmit()
-    }
-  }
-
-  // Convert products to SearchImage format
-  const productImages: SearchImage[] = products?.map(product => ({
-    id: product.id,
-    url: product.featuredImage?.url || '',
-    alt: product.title || 'Product'
-  })) || []
-
-  // Show products if we have a submitted query, otherwise show empty state initially
-  const filteredImages = submittedQuery 
-    ? productImages.length > 0 
-      ? productImages 
-      : dummyImages.filter(image => 
-          image.alt.toLowerCase().includes(submittedQuery.toLowerCase())
-        )
-    : [] // Start with empty array - no items shown initially
-
-  const addImageToWhiteboard = (image: SearchImage) => {
+  const addImageToWhiteboard = (image: Product) => {
     const newItem: WhiteboardItem = {
       id: `item-${Date.now()}-${Math.random()}`,
-      imageUrl: image.url,
+      imageUrl: image.featuredImage?.url || '',
       productId: image.id, // Store the actual product ID (or dummy ID for fallback images)
       x: 200, // Center horizontally (500px whiteboard - 100px item = 400px / 2 = 200px)
       y: 150, // Center vertically (400px whiteboard - 100px item = 300px / 2 = 150px)
@@ -219,8 +169,8 @@ export function Whiteboard() {
 
     setItems(items => items.map(item => {
       if (item.id === active.id) {
-        const newX = Math.max(0, Math.min(item.x + delta.x, 400)) // Max 400px (500-100)
-        const newY = Math.max(0, Math.min(item.y + delta.y, 300)) // Max 300px (400-100)
+        const newX = Math.max(0, Math.min(item.x + delta.x, window.innerWidth - 100)) // Max screen width - 100px
+        const newY = Math.max(0, Math.min(item.y + delta.y, 460)) // Max 460px (560-100)
         return {
           ...item,
           x: newX,
@@ -242,209 +192,115 @@ export function Whiteboard() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      {/* <div className="bg-black shadow-sm p-4">
-        <button 
-          onClick={handleGoBack}
-          className="text-gray-400 hover:text-white text-sm transition-colors"
-        >
-          ←
-        </button>
-      </div> */}
-      <h1 className="text-2xl font-bold text-white text-center">
-        Make the best outfit for the concert! 🎤
-      </h1>
+  // Debounce function to handle search
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setSubmittedQuery(searchQuery.trim());
+    }, 500); // 500ms debounce delay
 
-      {/* Whiteboard Canvas */}
+    return () => {
+      clearTimeout(debounceTimer);
+    };
+  }, [searchQuery]);
+
+  return (
+    <div className="min-h-screen h-full bg-black flex flex-col py-8">
+      <h1 className="text-2xl font-bold text-white text-center">{todayPrompt}</h1>
       <WhiteboardCanvas
         items={items}
         onDragEnd={handleDragEnd}
         selectedItemId={selectedItemId}
         onItemSelect={handleItemClick}
+        handleDeleteSelected={handleDeleteSelected}
       />
 
-      {/* Delete Button - Only shows when item is selected, positioned absolutely */}
-      {selectedItemId && (
-        <div className="absolute left-1/2 transform -translate-x-1/2 z-20" style={{ bottom: '140px' }}>
-          <button
-            onClick={handleDeleteSelected}
-            className="bg-red-600 hover:bg-red-700 text-white w-12 h-12 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center"
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-              />
-            </svg>
-          </button>
+      <div className="flex items-center justify-between px-6">
+        <button
+          onClick={handleGoBack}
+          className="w-20 text-white bg-[#3E3E3E] rounded-full py-2 text-center"
+        >
+          Close
+        </button>
+        <div
+          onClick={() => setShowAddPanel(true)}
+          className="w-12 h-12 bg-white text-black rounded-full text-4xl flex items-center justify-center"
+        >
+          +
         </div>
-      )}
-
-      {/* Bottom Toolbar */}
-      <div className="bg-black border-t border-gray-800 pb-8">
-        <div className="flex items-center justify-center space-x-4">
-          <button
-            onClick={handleGoBack}
-            className="text-white bg-[#3E3E3E] rounded-full py-2 px-4"
-          >
-            Close
-          </button>
-          <div
-            onClick={() => setShowAddPanel(true)}
-            className="w-12 h-12 bg-white text-black rounded-full text-4xl flex items-center justify-center"
-          >
-            +
-          </div>
-          <button
-            onClick={handleNext}
-            className="text-white bg-[#5433EB] rounded-full py-2 px-4"
-          >
-            Next
-          </button>
-        </div>
+        <button
+          onClick={handleNext}
+          className="w-20 text-white bg-[#5433EB] rounded-full py-2 text-center"
+        >
+          Next
+        </button>
       </div>
 
-      {/* Add Panel Modal */}
-      {showAddPanel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-          <div 
-            className="bg-gray-900 rounded-t-2xl w-full max-w-md mx-4 mb-0 transform animate-slide-up border-t border-gray-700"
-            style={{ maxHeight: '80vh' }}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <button 
-                onClick={() => setShowAddPanel(false)}
-                className="text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                Close
-              </button>
-              <h3 className="font-medium text-white">Add Items</h3>
-              <button 
-                onClick={() => setShowAddPanel(false)}
-                className="text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                Next
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div className="p-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for clothing items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleSearchKeyPress}
-                  className="w-full p-3 pr-12 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-800 text-white placeholder-gray-400"
-                  autoFocus
+      <Sheet isOpen={showAddPanel} onClose={() => {setShowAddPanel(false); setSearchQuery('')}}>
+        <Sheet.Container>
+          <Sheet.Content>
+            <div className="bg-[#DFDFDF] p-4 h-full flex flex-col items-center">
+              <div className="w-full flex justify-end">
+                <IconButton 
+                  Icon={X} 
+                  onClick={() => {setShowAddPanel(false); setSearchQuery('')}} 
+                  buttonStyles='bg-[#CECECE] rounded-full w-12 h-12 mb-4' 
+                  iconStyles='h-6 w-6 text-black'
                 />
-                <button
-                  onClick={handleSearchSubmit}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-4 w-4" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 5l7 7-7 7" 
-                    />
-                  </svg>
-                </button>
               </div>
+
+              <Input 
+                placeholder="🔍 Search products" 
+                value={searchQuery}
+                className='w-9/10 rounded-4xl bg-white text-center' // absolute z-10 bottom-16 
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSubmittedQuery(searchQuery);
+                  }
+                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              {
+                products && products.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 mt-4 w-full overflow-y-scroll">
+                    {products?.map((product) => (
+                      <div onClick={() => addImageToWhiteboard(product)}>
+                        <ProductCard 
+                          key={product.id}
+                          product={product}
+                          touchable={false}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-4/5 flex flex-col items-center justify-center">
+                    {loading ? (
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                        <p>Searching products...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="text-center text-red-500 flex gap-2">
+                        <CircleAlert />
+                        <p>Error loading products.</p>
+                      </div>
+                    ) : submittedQuery ? (
+                      <div className="text-center">
+                        <p className="text-lg">No items found for "{submittedQuery}"</p>
+                        <p className="text-sm mt-1 text-slate-600">Try a different search term</p>
+                      </div>
+                    ) : (
+                      <p className="w-3/5 text-lg text-center">Search for products to add to your board</p>
+                    )}
+                  </div>
+                )
+              }
             </div>
-
-            {/* Loading State */}
-            {loading && (
-              <div className="px-4 pb-4">
-                <div className="text-center text-gray-400">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                  <p>Searching products...</p>
-                </div>
-              </div>
-            )}
-
-            {/* Error State */}
-            {error && (
-              <div className="px-4 pb-4">
-                <div className="text-center text-red-400">
-                  <p>Error loading products. Showing sample items.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Image Grid */}
-            <div className="px-4 pb-6 max-h-80 overflow-y-auto">
-              {/* Initial Search Prompt - shown when no search has been submitted */}
-              {!submittedQuery && !loading && (
-                <div className="text-center py-12 text-gray-400">
-                  <div className="text-6xl mb-4">🔍</div>
-                  <p className="text-lg font-medium mb-2">Search for what you're looking for</p>
-                  <p className="text-sm text-gray-500">Type in the search box and hit the arrow to find products</p>
-                </div>
-              )}
-
-              {/* Product Grid - shown after search */}
-              {(submittedQuery || loading) && (
-                <div className="grid grid-cols-3 gap-3">
-                  {filteredImages.map(image => (
-                    <button
-                      key={image.id}
-                      onClick={() => addImageToWhiteboard(image)}
-                      className="aspect-square rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-all hover:scale-105 active:scale-95"
-                    >
-                      <img
-                        src={image.url}
-                        alt={image.alt}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {filteredImages.length === 0 && submittedQuery && !loading && (
-                <div className="text-center py-8 text-gray-400">
-                  <p>No items found for "{submittedQuery}"</p>
-                  <p className="text-xs mt-1">Try a different search term</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-      `}</style>
+          </Sheet.Content>
+        </Sheet.Container>
+        <Sheet.Backdrop />
+      </Sheet>
     </div>
   )
 }

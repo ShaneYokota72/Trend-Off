@@ -1,31 +1,43 @@
 @import "@shopify/shop-minis-react/styles";
 
-@keyframes slideRight {
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes infinite-scroll {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(calc(100vw + 96px));
+    transform: translateX(-100%); /* shift by half the width since we’ll duplicate content */
   }
 }
 
-@keyframes slideRightReturn {
-  0% {
-    transform: translateX(calc(-100vw - 96px));
-  }
-  100% {
-    transform: translateX(0);
-  }
+.animate-infinite-scroll-1 {
+  animation: infinite-scroll 8s linear infinite;
 }
 
-.animate-slide-1 {
-  animation: slideRight 8s linear infinite, slideRightReturn 4s linear infinite 10s;
+.animate-infinite-scroll-2 {
+  animation: infinite-scroll 4s linear infinite;
 }
 
-.animate-slide-2 {
-  animation: slideRight 10s linear infinite, slideRightReturn 6s linear infinite 12s;
+.animate-infinite-scroll-3 {
+  animation: infinite-scroll 7s linear infinite;
 }
 
-.animate-slide-3 {
-  animation: slideRight 6s linear infinite, slideRightReturn 2s linear infinite 8s;
+.animate-infinite-scroll-4 {
+  animation: infinite-scroll 6s linear infinite;
+}
+
+.react-modal-sheet-container {
+  height: 100% !important
 }

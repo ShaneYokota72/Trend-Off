@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Database } from '../../../util/supabase-types'
+import { Database } from '../../../../util/supabase-types'
 import { createClient } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server'
 import OpenAI from "openai";
