@@ -44,7 +44,7 @@ export type Database = {
           id: string
           product_ids: string[]
           title: string
-          uid: number
+          uid: string | null
           user_name: string
           vote_count: number
         }
@@ -56,7 +56,7 @@ export type Database = {
           id?: string
           product_ids: string[]
           title: string
-          uid: number
+          uid?: string | null
           user_name: string
           vote_count?: number
         }
@@ -68,7 +68,7 @@ export type Database = {
           id?: string
           product_ids?: string[]
           title?: string
-          uid?: number
+          uid?: string | null
           user_name?: string
           vote_count?: number
         }
@@ -77,23 +77,23 @@ export type Database = {
       User: {
         Row: {
           created_at: string
-          friends: number[]
+          friends: string[]
           id: string
-          uid: number
+          uid: number | null
           user_name: string
         }
         Insert: {
           created_at?: string
-          friends?: number[]
+          friends?: string[]
           id?: string
-          uid: number
+          uid?: number | null
           user_name: string
         }
         Update: {
           created_at?: string
-          friends?: number[]
+          friends?: string[]
           id?: string
-          uid?: number
+          uid?: number | null
           user_name?: string
         }
         Relationships: []

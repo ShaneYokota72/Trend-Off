@@ -83,6 +83,7 @@ function DraggableItem({
     >
       <img
         src={item.imageUrl}
+        key={item.id}
         alt="Outfit item"
         className="w-full h-full object-cover pointer-events-none"
         draggable={false}
