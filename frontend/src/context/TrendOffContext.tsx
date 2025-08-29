@@ -1,10 +1,13 @@
 import React, { createContext, useState, useEffect } from "react";
+import {useAsyncStorage, useCurrentUser} from '@shopify/shop-minis-react'
 
 type ImageGenerationStatus = "pre-generating" | "generating" | "completed" | "error";
 
 interface UserData {
+    id: string;
     uid: string;
-    userName: string;
+    user_name: string;
+    friends: string[];
 }
 
 interface TrendOffContextType {
@@ -17,7 +20,6 @@ interface TrendOffContextType {
     imageGenerationStatus: ImageGenerationStatus;
     setImageGenerationStatus: (status: ImageGenerationStatus) => void;
     generatedImageUrl: string;
-    // potential future additions: canvas_src, generated_img_src, 
 }
 
 export const TrendOffContext = createContext<TrendOffContextType>({
@@ -33,12 +35,39 @@ export const TrendOffContext = createContext<TrendOffContextType>({
 });
 
 export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<UserData | null>({ uid: "1", userName: "test user 1" }); // hardcoded for testing purposes
+    const [user, setUser] = useState<UserData | null>(null);
     const [todayPrompt, setTodayPrompt] = useState<string>("");
     const [productIds, setProductIds] = useState<string[]>([]);
     const [canvasImgSrc, setCanvasImgSrc] = useState<string>("");
     const [imageGenerationStatus, setImageGenerationStatus] = useState<ImageGenerationStatus>("pre-generating");
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
+    const { getItem, setItem } = useAsyncStorage()
+    const { currentUser } = useCurrentUser()
+
+    const createUser = async () => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/user/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    // uid: null, TODO: Will implement once userId is exposed from Shopify Shop
+                    user_name: currentUser?.displayName
+                }),
+            });
+    
+            if (response.ok) {
+                const { data } = await response.json();
+                return data
+            }
+
+            throw new Error('Failed to create user');
+        } catch (error) {
+            console.error('Error creating user:', error);
+            return null;
+        }
+    }
 
     useEffect(() => {
         const getPrompt = async () => {
@@ -51,10 +80,27 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         };
         
-        // TODO: make a user fetch call (when shopify integrates a hook for it)
+        const getUser = async () => {
+            const user = await getItem({key: 'userId'})
+            if (user) {
+                const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/user/get?id=${user}`);
+                const { data } = await response.json();
+                setUser(data);
+            } else {
+                const user = await createUser()
+                if (user && user?.id) {
+                    await setItem({key: 'userId', value: user.id})
+                }
+            }
+        }
 
-        getPrompt();
-        // TODO: call the user fetch function
+        const initLoad = async () => {
+            console.log("Initializing data load...");
+            await getPrompt();
+            await getUser();
+        }
+
+        initLoad();
     }, []);
 
     useEffect(() => {

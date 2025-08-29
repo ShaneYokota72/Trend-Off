@@ -1,7 +1,8 @@
 {
-  "name": "hackathon-mini",
+  "name": "Trend Off",
+  "trusted_domains": ["127.0.0.1", "localhost", "localhost:*"],
   "permissions": [],
   "privacy_policy_url": "https://example.com/privacy",
   "terms_url": "https://example.com/terms",
-  "handle": "hackathon-mini"
+  "handle": "Trend Off"
 }

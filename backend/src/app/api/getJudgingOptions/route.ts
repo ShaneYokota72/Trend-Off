@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
         startPst.setHours(0, 0, 0, 0);
         endPst.setHours(23, 59, 59, 999);
 
-        // Idea: potentially make this return 6, so that there is no need to fetch this API 3 times when judging
         const { data, error } = await supabase.rpc("get_two_candidates", {
             start_ts:startPst.toISOString(),
             end_ts: endPst.toISOString()
