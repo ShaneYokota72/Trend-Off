@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from 'react'
 import { DragEndEvent } from '@dnd-kit/core'
 import { WhiteboardCanvas, WhiteboardItem } from './WhiteboardCanvas'
-import { IconButton, Input, Product, ProductCard, useImageUpload, useProductSearch } from '@shopify/shop-minis-react'
+import { IconButton, Input, Product, ProductCard, ProductCardTitle, useImageUpload, useProductSearch } from '@shopify/shop-minis-react'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
 import { TrendOffContext } from '../../context/TrendOffContext'
 import { CircleAlert, X } from 'lucide-react'
@@ -101,13 +101,15 @@ export function Whiteboard() {
     try {
       const canvasImage = await screenShotCanvas();
       console.log('Captured whiteboard image:', canvasImage);
-
-      const result = await uploadImage([
-        {
-          mimeType: 'image/png',
-          uri: canvasImage,
-        },
-      ])
+      
+      // Convert base64 to blob
+      const base64Response = await fetch(canvasImage);
+      const blob = await base64Response.blob();
+      
+      // Create a File object from the blob
+      const file = new File([blob], 'whiteboard.png', { type: 'image/png' });
+      
+      const result = await uploadImage(file);
 
       if(result[0]?.imageUrl) setCanvasImgSrc(result[0].imageUrl)
     } catch (error) {
@@ -264,7 +266,7 @@ export function Whiteboard() {
                 products && products.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4 mt-4 w-full overflow-y-scroll">
                     {products?.map((product) => (
-                      <div onClick={() => addImageToWhiteboard(product)}>
+                      <div key={product.id} onClick={() => addImageToWhiteboard(product)}>
                         <ProductCard 
                           key={product.id}
                           product={product}

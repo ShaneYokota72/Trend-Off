@@ -80,6 +80,10 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         };
         
+        getPrompt()
+    }, []);
+
+    useEffect(() => {
         const getUser = async () => {
             const user = await getItem({key: 'userId'})
             if (user) {
@@ -94,14 +98,10 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         }
 
-        const initLoad = async () => {
-            console.log("Initializing data load...");
-            await getPrompt();
-            await getUser();
+        if(currentUser?.displayName) {
+            getUser()
         }
-
-        initLoad();
-    }, []);
+    }, [currentUser]);
 
     useEffect(() => {
         // save canvas img src to db along with all other info?
@@ -136,7 +136,7 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         // start the img gen process
-        generateImage();
+        if(canvasImgSrc !== "") generateImage();
     }, [canvasImgSrc]);
 
     return (
