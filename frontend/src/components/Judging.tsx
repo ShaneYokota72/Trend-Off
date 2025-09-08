@@ -33,6 +33,12 @@ export function Judging() {
       setIsLoading(true)
       const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getJudgingOptions`)
       const data = await response.json()
+      if (data.data.length < 2) { // not enough items to judge (0 or 1)
+        document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+        navigation('/submission')
+        setIsLoading(false)
+        return
+      }
       setJudgeItems(data.data)
       setTotalJudgeCount(Math.floor(data.data.length / 2))
       setIsLoading(false)

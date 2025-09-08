@@ -5,7 +5,7 @@ export default function CanvasImageView({
     genImage,
 }: {
     canvasImage: string;
-    genImage: string;
+    genImage: string | undefined;
 }) {
   const [isCanvasView, setIsCanvasView] = useState(true);
 
@@ -17,19 +17,11 @@ export default function CanvasImageView({
         </div>
 
         <div className='text-white mt-4'>
-            {isCanvasView ? (
-                <img 
-                src={canvasImage} 
-                alt="Canvas creation" 
+            <img 
+                src={isCanvasView ? canvasImage : genImage} 
+                alt={isCanvasView ? "Canvas creation" : "Generated creation"} 
                 className="mx-auto w-[85%] rounded-3xl aspect-[9/13] object-cover"
-                />
-            ) : (
-                <img 
-                src={genImage} 
-                alt="Generated creation" 
-                className="mx-auto w-[85%] rounded-3xl aspect-[9/13] object-cover"
-                />
-            )}
+            />
         </div>
     </>
   )

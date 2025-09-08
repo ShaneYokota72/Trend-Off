@@ -3,11 +3,11 @@ import supabase from "@/util/supabase";
 
 export async function POST(req: NextRequest) {
     try {
-        const { userName } = await req.json();
+        const { user_name } = await req.json();
 
         const { data, error } = await supabase
             .from("User")
-            .insert({ user_name: userName })
+            .insert({ user_name: user_name })
             .select()
             .single();
 

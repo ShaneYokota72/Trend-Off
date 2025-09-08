@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useCurrentUser } from '@shopify/shop-minis-react'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
 import CanvasImageView from './CanvasImageView'
+import { TrendOffContext } from '../context/TrendOffContext'
 
 export function Submission() {
   const [title, setTitle] = useState('')
-  const [canvasImage, setCanvasImage] = useState<string>('')
-  const [genImage, setGenImage] = useState<string>('')
+  // const [canvasImage, setCanvasImage] = useState<string>('')
+  // const [genImage, setGenImage] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isCanvasView, setIsCanvasView] = useState(true)
   const navigation = useNavigateWithTransition()
+  const { canvasImgSrc, imageGenerationStatus, generatedImageUrl} = useContext(TrendOffContext)
 
   // Get current user from Shopify Shop Minis
   const { currentUser } = useCurrentUser()
 
-  useEffect(() => {
-    console.log('Submission component mounted')
+  // useEffect(() => {
+  //   console.log('Submission component mounted')
     
-    // Get the canvas image from sessionStorage
-    const localCanvasImage = sessionStorage.getItem('canvasImage')
-    const localGenImage = sessionStorage.getItem('genImage')
+  //   // Get the canvas image from sessionStorage
+  //   const localCanvasImage = sessionStorage.getItem('canvasImage')
+  //   const localGenImage = sessionStorage.getItem('genImage')
     
-    if (localCanvasImage) {
-      setCanvasImage(localCanvasImage)
-      console.log('Canvas image set in state')
-    } else {
-      console.error('No image found in sessionStorage')
-    }
-    if (localGenImage) {
-      setGenImage(localGenImage)
-      console.log('Generated image set in state')
-    } else {
-      console.error('No generated image found in sessionStorage')
-    }
-  }, [])
+  //   if (localCanvasImage) {
+  //     setCanvasImage(localCanvasImage)
+  //     console.log('Canvas image set in state')
+  //   } else {
+  //     console.error('No image found in sessionStorage')
+  //   }
+  //   if (localGenImage) {
+  //     setGenImage(localGenImage)
+  //     console.log('Generated image set in state')
+  //   } else {
+  //     console.error('No generated image found in sessionStorage')
+  //   }
+  // }, [])
 
   const handleGoBack = () => {
     document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.backward);
@@ -50,58 +52,58 @@ export function Submission() {
     });
   }
 
-  const handleFinalSubmit = async () => {
-    if (!title.trim() || !canvasImage) return
+  // const handleFinalSubmit = async () => {
+  //   if (!title.trim() || !canvasImage) return
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+  //   setIsSubmitting(true)
+  //   setSubmitError(null)
 
-    try {
-      // Get product IDs from sessionStorage
-      const storedProductIds = sessionStorage.getItem('productIds')
-      const productIds = storedProductIds ? JSON.parse(storedProductIds) : []
+  //   try {
+  //     // Get product IDs from sessionStorage
+  //     const storedProductIds = sessionStorage.getItem('productIds')
+  //     const productIds = storedProductIds ? JSON.parse(storedProductIds) : []
 
-      const response = await fetch('http://localhost:8080/api/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uid: generateUUID(),
-          img: canvasImage,
-          title: title.trim(),
-          displayName: currentUser?.displayName || 'Anonymous User',
-          transformedImage: genImage || null,
-          productIds: productIds // Add product IDs to submission
-        })
-      })
+  //     const response = await fetch('http://localhost:8080/api/submit', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         uid: generateUUID(),
+  //         img: canvasImage,
+  //         title: title.trim(),
+  //         displayName: currentUser?.displayName || 'Anonymous User',
+  //         transformedImage: genImage || null,
+  //         productIds: productIds // Add product IDs to submission
+  //       })
+  //     })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Submission failed')
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json()
+  //       throw new Error(errorData.error || 'Submission failed')
+  //     }
 
-      const result = await response.json()
-      console.log('Submission successful:', result)
+  //     const result = await response.json()
+  //     console.log('Submission successful:', result)
 
-      // Clean up stored data after successful submission
-      sessionStorage.removeItem('canvasImage')
-      sessionStorage.removeItem('genImage')
-      sessionStorage.removeItem('generationStatus')
-      sessionStorage.removeItem('productIds')
+  //     // Clean up stored data after successful submission
+  //     sessionStorage.removeItem('canvasImage')
+  //     sessionStorage.removeItem('genImage')
+  //     sessionStorage.removeItem('generationStatus')
+  //     sessionStorage.removeItem('productIds')
 
-      // Navigate directly to results page (skip judging since it's already done)
-      document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
-      navigation('/results')
-    } catch (error) {
-      console.error('Submission error:', error)
-      setSubmitError(error instanceof Error ? error.message : 'Failed to submit. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  //     // Navigate directly to results page (skip judging since it's already done)
+  //     document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+  //     navigation('/results')
+  //   } catch (error) {
+  //     console.error('Submission error:', error)
+  //     setSubmitError(error instanceof Error ? error.message : 'Failed to submit. Please try again.')
+  //   } finally {
+  //     setIsSubmitting(false)
+  //   }
+  // }
 
-  const isFormValid = title.trim() && canvasImage
+  const isFormValid = title.trim() && canvasImgSrc && generatedImageUrl
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -128,8 +130,8 @@ export function Submission() {
       </div> */}
 
       <CanvasImageView
-        canvasImage={canvasImage}
-        genImage={genImage}
+        canvasImage={canvasImgSrc}
+        genImage={generatedImageUrl}
       />
 
       <div className="flex-1 p-6">
@@ -153,7 +155,8 @@ export function Submission() {
                 Close
               </button>
               <button
-                onClick={handleFinalSubmit}
+                // onClick={handleFinalSubmit}
+                onClick={() => {}}
                 disabled={!isFormValid}
                 className="text-white bg-[#5433EB] rounded-full py-2 px-4"
               >
