@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from 'react'
 import { DragEndEvent } from '@dnd-kit/core'
 import { WhiteboardCanvas, WhiteboardItem } from './WhiteboardCanvas'
-import { IconButton, Input, Product, ProductCard, ProductCardTitle, useImageUpload, useProductSearch } from '@shopify/shop-minis-react'
+import { IconButton, Input, Product, ProductCard, useImageUpload, useProductSearch } from '@shopify/shop-minis-react'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
 import { TrendOffContext } from '../../context/TrendOffContext'
 import { CircleAlert, X } from 'lucide-react'
@@ -13,7 +13,7 @@ export function Whiteboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-  const { todayPrompt, setCanvasImgSrc } = useContext(TrendOffContext)
+  const { todayPrompt, setCanvasImgSrc, productIds,setProductIds } = useContext(TrendOffContext)
   const { uploadImage } = useImageUpload()
   const navigation = useNavigateWithTransition()
 
@@ -100,7 +100,6 @@ export function Whiteboard() {
   const handleNext = async () => {
     try {
       const canvasImage = await screenShotCanvas();
-      console.log('Captured whiteboard image:', canvasImage);
       
       // Convert base64 to blob
       const base64Response = await fetch(canvasImage);
@@ -121,34 +120,6 @@ export function Whiteboard() {
     navigation('/judging');
   }
 
-  const generateAIImage = async (canvasImage: string) => {
-    try {
-      const response = await fetch('http://localhost:8080/api/img2img', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: canvasImage,
-          prompt: 'Make a model wearing thiis outfit for a concert'
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        sessionStorage.setItem('genImage', data.transformedImage || '');
-        sessionStorage.setItem('generationStatus', 'complete');
-        console.log('AI generation completed');
-      } else {
-        console.error('Image generation failed:', response.statusText);
-        sessionStorage.setItem('generationStatus', 'failed');
-      }
-    } catch (error) {
-      console.error('AI generation error:', error);
-      sessionStorage.setItem('generationStatus', 'failed');
-    }
-  }
-
   const addImageToWhiteboard = (image: Product) => {
     const newItem: WhiteboardItem = {
       id: `item-${Date.now()}-${Math.random()}`,
@@ -160,6 +131,7 @@ export function Whiteboard() {
       height: 100
     }
     setItems(prev => [...prev, newItem])
+    setProductIds([...productIds, image.id])
     setShowAddPanel(false)
     setSearchQuery('')
   }
