@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_gen_prompt: string | null
           prompt: string
           prompt_date: string
         }
         Insert: {
           created_at?: string
           id?: string
+          image_gen_prompt?: string | null
           prompt: string
           prompt_date: string
         }
         Update: {
           created_at?: string
           id?: string
+          image_gen_prompt?: string | null
           prompt?: string
           prompt_date?: string
         }

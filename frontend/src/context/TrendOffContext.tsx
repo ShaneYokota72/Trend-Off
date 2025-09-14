@@ -1,11 +1,11 @@
 import React, { createContext, useState, useEffect } from "react";
-import {useAsyncStorage, useCurrentUser} from '@shopify/shop-minis-react'
+import {useAsyncStorage, useCurrentUser, useImageUpload} from '@shopify/shop-minis-react'
 
 type ImageGenerationStatus = "pre-generating" | "generating" | "completed" | "error";
 
 interface UserData {
     id: string;
-    uid: string;
+    uid: string | null; // will be null until shopify exposes userId in shop minis
     user_name: string;
     friends: string[];
 }
@@ -37,11 +37,13 @@ export const TrendOffContext = createContext<TrendOffContextType>({
 export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<UserData | null>(null);
     const [todayPrompt, setTodayPrompt] = useState<string>("");
+    const [imageGenPrompt, setImageGenPrompt] = useState<string>("");
     const [productIds, setProductIds] = useState<string[]>([]);
     const [canvasImgSrc, setCanvasImgSrc] = useState<string>("");
     const [imageGenerationStatus, setImageGenerationStatus] = useState<ImageGenerationStatus>("pre-generating");
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
     const { getItem, setItem } = useAsyncStorage()
+    const { uploadImage } = useImageUpload()
     const { currentUser } = useCurrentUser()
 
     const createUser = async () => {
@@ -59,6 +61,7 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
             if (response.ok) {
                 const { data } = await response.json();
+                setUser(data);
                 return data
             }
 
@@ -75,6 +78,7 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getPrompt`);
                 const { data } = await response.json();
                 setTodayPrompt(data.prompt || "");
+                setImageGenPrompt(data.image_gen_prompt || "");
             } catch (error) {
                 console.error('Error fetching prompt:', error);
             }
@@ -107,8 +111,9 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // save canvas img src to db along with all other info?
         const generateImage = async () => {
             try {
+                // use fal.ai for image generation
+                // expecting image url with fal.ai domain
                 setImageGenerationStatus("generating");
-                console.log('Generating image with src:', canvasImgSrc);
                 const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/generateImage`, {
                     method: 'POST',
                     headers: {
@@ -117,20 +122,29 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     body: JSON.stringify({
                         imageSrc: canvasImgSrc,
                         challenge: todayPrompt,
-                        prompt: ""
+                        prompt: imageGenPrompt || "",
                     }),
                 });
 
+                // convert fal.ai url to shopify based image url to render in img tag
                 if (response.ok) {
-                    const { data } = await response.json();
-                    console.log("img gen comp with src:", canvasImgSrc);
-                    setGeneratedImageUrl(data.imageUrl || "");
+                    // imageUrl is a base64 encoded image
+                    const { imageUrl, contentType } = await response.json();
+
+                    // upload to shopify cdn
+                    const blob = await fetch(imageUrl).then(res => res.blob());
+                    const file = new File([blob], `${user?.user_name}_${user?.id}_${Date.now()}.${contentType.split('/')[1]}`, { type: contentType });
+                    const result = await uploadImage(file);
+
+                    // set the generated image url to shopify cdn url
+                    if(result[0]?.imageUrl) setGeneratedImageUrl(result[0].imageUrl)
                     setImageGenerationStatus("completed");
                 } else {
                     console.error('Image generation failed:', response.statusText);
                     setImageGenerationStatus("error");
                 }
             } catch (error) {
+                setImageGenerationStatus("error");
                 console.error('Error generating image:', error);
             }
         }

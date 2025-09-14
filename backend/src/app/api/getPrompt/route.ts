@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
         const { data, error } = await supabase
             .from('DailyChallenge')
-            .select('prompt')
+            .select('prompt, image_gen_prompt')
             .eq('prompt_date', isoPST.split('T')[0])
             .single();
         if (error) {
