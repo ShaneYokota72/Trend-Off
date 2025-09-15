@@ -65,7 +65,7 @@ export function CalendarPreview() {
     const fetchSeventhMostRecent = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8080/api/getSeventh')
+        const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/getSeventh')
         if (!response.ok) {
           throw new Error('Network response was not ok')
         }

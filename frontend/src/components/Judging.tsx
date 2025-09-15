@@ -139,7 +139,7 @@ export function Judging() {
           onClick={() => handleJudged(0)}
           className={`mt-8 text-white bg-[#3E3E3E] rounded-full py-2 px-4 transition-all duration-200 hover:bg-[#4E4E4E] active:scale-95`}
         >
-          Too tough to choose
+          Too tough
         </button>
       </div>
     </div>

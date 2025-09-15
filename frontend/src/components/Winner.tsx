@@ -17,7 +17,7 @@ export default function Winner() {
         console.log('Fetching winners...')
         setLoading(true)
         setError(null)
-
+        
         const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/winners`);
         const data = await response.json()
         
@@ -33,7 +33,7 @@ export default function Winner() {
   },[])
 
   const handleNextWinner = () => {
-    if(winnerInView >= 2) {
+    if(winnerInView >= 3) {
       document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
       navigation('/results')
       return
