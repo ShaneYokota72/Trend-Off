@@ -7,71 +7,97 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
-      Canvas: {
+      DailyChallenge: {
         Row: {
-          display_name: string | null
-          elo: number | null
-          generated_image: string | null
+          created_at: string
           id: string
-          img: string | null
-          product_ids: string[] | null
-          title: string | null
-          uid: string
-          updatedAt: string | null
+          image_gen_prompt: string | null
+          prompt: string
+          prompt_date: string
         }
         Insert: {
-          display_name?: string | null
-          elo?: number | null
-          generated_image?: string | null
+          created_at?: string
           id?: string
-          img?: string | null
-          product_ids?: string[] | null
-          title?: string | null
-          uid?: string
-          updatedAt?: string | null
+          image_gen_prompt?: string | null
+          prompt: string
+          prompt_date: string
         }
         Update: {
-          display_name?: string | null
-          elo?: number | null
-          generated_image?: string | null
+          created_at?: string
           id?: string
-          img?: string | null
-          product_ids?: string[] | null
-          title?: string | null
-          uid?: string
-          updatedAt?: string | null
+          image_gen_prompt?: string | null
+          prompt?: string
+          prompt_date?: string
+        }
+        Relationships: []
+      }
+      Entry: {
+        Row: {
+          canvas_src: string | null
+          created_at: string
+          elo: number
+          gen_img_src: string | null
+          id: string
+          product_ids: string[]
+          title: string
+          uid: string | null
+          user_name: string
+          vote_count: number
+        }
+        Insert: {
+          canvas_src?: string | null
+          created_at?: string
+          elo?: number
+          gen_img_src?: string | null
+          id?: string
+          product_ids: string[]
+          title: string
+          uid?: string | null
+          user_name: string
+          vote_count?: number
+        }
+        Update: {
+          canvas_src?: string | null
+          created_at?: string
+          elo?: number
+          gen_img_src?: string | null
+          id?: string
+          product_ids?: string[]
+          title?: string
+          uid?: string | null
+          user_name?: string
+          vote_count?: number
+        }
+        Relationships: []
+      }
+      User: {
+        Row: {
+          created_at: string
+          friends: string[]
+          id: string
+          uid: number | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          friends?: string[]
+          id?: string
+          uid?: number | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          friends?: string[]
+          id?: string
+          uid?: number | null
+          user_name?: string
         }
         Relationships: []
       }
@@ -80,7 +106,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_two_candidates: {
+        Args: { end_ts: string; start_ts: string }
+        Returns: {
+          gen_img_src: string
+          id: string
+          title: string
+        }[]
+      }
+      update_elo_after_vote: {
+        Args: { loser_id: string; winner_id: string }
+        Returns: {
+          id: string
+          new_elo: number
+          new_vote_count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -209,9 +250,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

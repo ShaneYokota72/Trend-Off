@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
+import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE, Button} from '@shopify/shop-minis-react'
 import { Friends } from './Friends'
 
 interface CardData {
@@ -28,31 +28,8 @@ const cardData: CardData[] = [
 
 export function Results() {
   const navigation = useNavigateWithTransition()
-  const [result, setResult] = React.useState<any>(null)
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/getAll')
-        if (!response.ok) {
-          throw new Error('Network response was not ok')
-        }
-        const data = await response.json()
-        data.data.sort((a: any, b: any) => b.elo - a.elo)
-        let winner = data.data[0]
-        winner.rank = 'Best Submission 🥇'
-        winner.category = 'Make the best fit for $50'
-        winner.total_submissions = data.data.length
-        winner.winner_name = winner.display_name || 'Daniel Kim'
-        setResult(winner);
-      } catch (error) {
-        console.error('Error fetching results:', error)
-      }
-    }
-    fetchResults()
-  }, [])
 
   const nextCard = () => {
     setCurrentCardIndex((prev) => (prev + 1) % cardData.length);
@@ -141,24 +118,10 @@ export function Results() {
         </button>
       </div>
 
-      {/* Main content centered */}
       <div className="flex flex-col items-center justify-start min-h-screen pt-16 px-4 max-w-full">
-        {/* Trophy */}
         <img src="/trophy.svg" alt="Trophy" className="w-16 h-16 mb-6" />
-        
-        {/* You crushed it! */}
-        <h1
-          style={{
-            color: '#FFF',
-            textAlign: 'center',
-            fontFamily: '"Instrument Sans", sans-serif',
-            fontSize: '32px',
-            fontStyle: 'normal',
-            fontWeight: 700,
-            lineHeight: 'normal',
-            marginBottom: '40px'
-          }}
-        >
+        {/* One liner comment - TODO: personalize it */}
+        <h1 className='text-white text-center font-bold text-3xl mb-6'>
           You crushed it!
         </h1>
 
@@ -221,7 +184,7 @@ export function Results() {
         </div>
 
         {/* View Winners button */}
-        <button
+        {/* <button
           onClick={handleViewWinners}
           style={{
             borderRadius: '20px',
@@ -240,7 +203,8 @@ export function Results() {
           }}
         >
           View Winners
-        </button>
+        </button> */}
+        <Button onClick={handleViewWinners} className='rounded-full !w-fit mx-auto px-4 py-2'>View Winners</Button>
       </div>
 
       {/* Friends Popup */}

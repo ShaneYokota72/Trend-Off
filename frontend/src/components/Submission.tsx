@@ -1,139 +1,78 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useContext } from 'react'
 import { useCurrentUser } from '@shopify/shop-minis-react'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
 import CanvasImageView from './CanvasImageView'
+import { TrendOffContext } from '../context/TrendOffContext'
 
 export function Submission() {
   const [title, setTitle] = useState('')
-  const [canvasImage, setCanvasImage] = useState<string>('')
-  const [genImage, setGenImage] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [isCanvasView, setIsCanvasView] = useState(true)
   const navigation = useNavigateWithTransition()
+  const { user, productIds, canvasImgSrc, imageGenerationStatus, generatedImageUrl} = useContext(TrendOffContext)
 
   // Get current user from Shopify Shop Minis
   const { currentUser } = useCurrentUser()
-
-  useEffect(() => {
-    console.log('Submission component mounted')
-    
-    // Get the canvas image from sessionStorage
-    const localCanvasImage = sessionStorage.getItem('canvasImage')
-    const localGenImage = sessionStorage.getItem('genImage')
-    
-    if (localCanvasImage) {
-      setCanvasImage(localCanvasImage)
-      console.log('Canvas image set in state')
-    } else {
-      console.error('No image found in sessionStorage')
-    }
-    if (localGenImage) {
-      setGenImage(localGenImage)
-      console.log('Generated image set in state')
-    } else {
-      console.error('No generated image found in sessionStorage')
-    }
-  }, [])
 
   const handleGoBack = () => {
     document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.backward);
     navigation(-1)
   }
 
-  // Generate a proper UUID v4
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  const handleFinalSubmit = async () => {
-    if (!title.trim() || !canvasImage) return
-
-    setIsSubmitting(true)
-    setSubmitError(null)
-
+  const handleSubmit = async () => {
     try {
-      // Get product IDs from sessionStorage
-      const storedProductIds = sessionStorage.getItem('productIds')
-      const productIds = storedProductIds ? JSON.parse(storedProductIds) : []
-
-      const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/submit', {
+      setIsSubmitting(true)
+      const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          uid: generateUUID(),
-          img: canvasImage,
+          uid: user?.id || 'anonymous',
+          user_name: currentUser?.displayName || 'Unknown User',
           title: title.trim(),
-          displayName: currentUser?.displayName || 'Anonymous User',
-          transformedImage: genImage || null,
-          productIds: productIds // Add product IDs to submission
-        })
-      })
+          canvas_src: canvasImgSrc,
+          gen_img_src: generatedImageUrl,
+          product_ids: productIds
+        }),
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Submission failed')
+      if (response.ok) {
+        // Navigate to results page
+        document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+        navigation('/results');
+      } else {
+        const errorData = await response.json();
+        console.error('Submission failed:', errorData);
       }
-
-      const result = await response.json()
-      console.log('Submission successful:', result)
-
-      // Clean up stored data after successful submission
-      sessionStorage.removeItem('canvasImage')
-      sessionStorage.removeItem('genImage')
-      sessionStorage.removeItem('generationStatus')
-      sessionStorage.removeItem('productIds')
-
-      // Navigate directly to results page (skip judging since it's already done)
-      document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
-      navigation('/results')
     } catch (error) {
-      console.error('Submission error:', error)
-      setSubmitError(error instanceof Error ? error.message : 'Failed to submit. Please try again.')
+      console.error('Submission error:', error);
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const isFormValid = title.trim() && canvasImage
+  const isFormValid = title.trim() && canvasImgSrc && generatedImageUrl
+
+  if (imageGenerationStatus !== 'completed') {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center text-white">
+        <div className="relative flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+          <p className="mt-4 text-lg font-medium">Generating image...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      {/* Content */}
-      {/* <div className='flex mx-auto text-white text-2xl font-semibold gap-24'>
-        <p onClick={() => setIsCanvasView(true)} className={`${isCanvasView ? '' : 'text-slate-400'}`}>Canvas</p>
-        <p onClick={() => setIsCanvasView(false)} className={`${!isCanvasView ? '' : 'text-slate-400'}`}>Image</p>
-      </div>
-
-      <div className='text-white mt-4'>
-        {isCanvasView ? (
-          <img 
-            src={canvasImage} 
-            alt="Canvas creation" 
-            className="mx-auto w-[85%] rounded-3xl aspect-[9/13] object-cover"
-          />
-        ) : (
-          <img 
-            src={genImage} 
-            alt="Generated creation" 
-            className="mx-auto w-[85%] rounded-3xl aspect-[9/13] object-cover"
-          />
-        )}
-      </div> */}
-
       <CanvasImageView
-        canvasImage={canvasImage}
-        genImage={genImage}
+        canvasImage={canvasImgSrc}
+        genImage={generatedImageUrl}
       />
 
-      <div className="flex-1 p-6">
-        <div className="max-w-md mx-auto">
+      <div className="flex-1 p-6 flex flex-col justify-between">
+        <div className="max-w-md">
           <input
             id="title"
             type="text"
@@ -143,39 +82,22 @@ export function Submission() {
             className="w-full px-4 py-3 my-2 text-xl text-center border border-gray-600 rounded-lg focus:ring-0 focus:ring-slate-200 focus:border-slate-200 transition-colors bg-gray-700 text-white placeholder-gray-400"
             autoFocus
           />
-
-          <div className="bg-black border-t border-gray-800 pb-8">
-            <div className="flex items-center justify-between space-x-4 mt-6">
-              <button
-                onClick={handleGoBack}
-                className="text-white bg-[#3E3E3E] rounded-full py-2 px-4"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleFinalSubmit}
-                disabled={!isFormValid}
-                className="text-white bg-[#5433EB] rounded-full py-2 px-4"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          {/* <button
-            onClick={handleSubmit}
-            disabled={!isFormValid}
-            className={`w-full font-medium py-3 px-6 rounded-lg transition-all duration-300 ${
-              isFormValid 
-                ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transform hover:scale-105 active:scale-95' 
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            Preview & Submit
-          </button> */}
         </div>
-
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleGoBack}
+            className="w-20 text-white bg-[#3E3E3E] rounded-full py-2 text-center"
+          >
+            Close
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            className="w-20 text-white bg-[#5433EB] rounded-full py-2 text-center"
+          >
+            Submit
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,171 +1,143 @@
-import React, { useEffect, useState } from "react"
-import JudgeCard from "./JudgeCard"
-import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
+import { useContext, useEffect, useState } from "react"
+import JudgeCard, { SelectedCard } from "./JudgeCard"
+import { useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE } from '@shopify/shop-minis-react'
+import { TrendOffContext } from "../context/TrendOffContext"
 
 type JudgingItem = {
-  "id": string,
-  "uid": string,
-  "img": string,
-  "elo": number,
-  "updatedAt": string,
-  "title": string,
-  "display_name": string | null,
-  "generated_image": string
+  "id": string, 
+  "title": string, 
+  "gen_img_src": string
 }
 
 // Loading Spinner Component
-const LoadingSpinner = () => (
+const LoadingSpinner = ({ todayPrompt }: { todayPrompt: string }) => (
   <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center text-white">
     <div className="relative">
       <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
     </div>
-    <p className="mt-4 text-lg font-medium">Loading concert fits...</p>
+    <p className="mt-4 text-lg font-medium">Loading {todayPrompt}...</p>
   </div>
 )
 
 export function Judging() {
   const navigation = useNavigateWithTransition()
-  const [judgedCount, setJudgedCount] = useState<number>(0)
   const [judgeItems, setJudgeItems] = useState<JudgingItem[]>([])
+  const [judgedCount, setJudgedCount] = useState<number>(0)
+  const [totalJudgeCount, setTotalJudgeCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
-  const [selectedCard, setSelectedCard] = useState<number | null>(null)
+  const [selection, setSelection] = useState<SelectedCard>(null)
+  const { todayPrompt } = useContext(TrendOffContext)
 
-  const getJudgeItems = async () => {
-    const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/getTwoLeastRecentlyUsed')
-    const data = await response.json()
-    return data.data
-  }
+  useEffect(() => {
+    const getJudgeItems = async () => {
+      setIsLoading(true)
+      const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getJudgingOptions`)
+      const data = await response.json()
+      if (data.data.length < 2) { // not enough items to judge (0 or 1)
+        document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+        navigation('/submission')
+        setIsLoading(false)
+        return
+      }
+      setJudgeItems(data.data)
+      setTotalJudgeCount(Math.floor(data.data.length / 2))
+      setIsLoading(false)
+    }
+
+    getJudgeItems()
+  }, [])
 
   const handleJudged = async (chosenItem: Number) => {
-    setSelectedCard(chosenItem as number)
-    setIsTransitioning(true)
+    console.log('Chosen item:', chosenItem)
+    if (chosenItem === 0) { // "Too tough to choose" case
+      setSelection(null)
+      await new Promise(resolve => setTimeout(resolve, 250));
 
-    // Wait for selection animation
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    // Send judge api call
-    await fetch('https://shop-mini-hack-tau.vercel.app/api/vote', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        winnerId: chosenItem === 1 ? judgeItems[0].id : judgeItems[1].id,
-        loserId: chosenItem === 1 ? judgeItems[1].id : judgeItems[0].id
-      })
-    })
-
-    // First, increment the count to show the correct number
-    const newCount = judgedCount + 1
-    setJudgedCount(newCount)
-
-    // Wait a moment to show the updated count
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Now check if we've completed 3 judgments
-    if (newCount >= 3) {
-      const generationStatus = sessionStorage.getItem('generationStatus')
-      
-      if (generationStatus === 'complete') {
-        // AI is ready, go directly to submission
+      if (judgedCount + 1 >= totalJudgeCount) {
         document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
         navigation('/submission')
       } else {
-        // AI still processing, go to loading page
-        document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
-        navigation('/loading')
+        setJudgedCount(judgedCount + 1)
       }
-      return
     }
 
-    // If we haven't finished all 3, fetch new items
-    // Fade out current items
-    await new Promise(resolve => setTimeout(resolve, 300))
+    setSelection(chosenItem === 1 ? "left" : "right")
+    console.log('stopping for 750ms for animation')
+    await new Promise(resolve => setTimeout(resolve, 750));
+    console.log('resuming after delay')
 
-    try {
-      const newItems = await getJudgeItems()
-      setJudgeItems(newItems)
-    } catch (error) {
-      console.error('Error fetching new items:', error)
-      // Reset to prevent getting stuck
-      setIsTransitioning(false)
-      return
+    // judge api call
+    await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/judge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        winnerId: chosenItem === 1 ? judgeItems[judgedCount*2 + 0].id : judgeItems[judgedCount*2 + 1].id,
+        loserId: chosenItem === 1 ? judgeItems[judgedCount*2 + 1].id : judgeItems[judgedCount*2 + 0].id
+      })
+    })
+
+    // go next page or next judge
+    if (judgedCount + 1 >= totalJudgeCount) {
+      // while(imageGenerationStatus !== 'completed') {
+      //   await new Promise(resolve => setTimeout(resolve, 1000));
+      // }
+      document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+      navigation('/submission')
+    } else {
+      setJudgedCount(judgedCount + 1)
     }
 
     // Reset states and fade in new items
-    setSelectedCard(null)
-    setIsTransitioning(false)
+    setSelection(null)
   }
 
-  useEffect(() => {
-    getJudgeItems().then(items => {
-      setJudgeItems(items)
-      setIsLoading(false)
-    }).catch(error => {
-      console.error('Error fetching judge items:', error)
-      setIsLoading(false)
-    })
-  },[])
-
   if (isLoading) {
-    return <LoadingSpinner />
+    return <LoadingSpinner todayPrompt={todayPrompt}/>
   }
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] px-2 text-white">
       <div className="max-w-2xl mx-auto flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold text-white text-center mt-12">
-          Which is the better Concert Fit?
+          {todayPrompt}
         </h1>
         <div className="mt-2 mb-8">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium">{judgedCount}/3</span>
+            <span className="text-lg font-medium">{judgedCount + 1}/{totalJudgeCount}</span>
             <div className="flex gap-1">
-              {[1, 2, 3].map((i) => (
+              {[...Array(totalJudgeCount)].map((_, i) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    i <= judgedCount ? 'bg-[#5433EB]' : 'bg-white/20'
-                  }`}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${i < judgedCount ? 'bg-[#5433EB]' : 'bg-white/20'}`}
                 />
               ))}
             </div>
           </div>
         </div>
 
-        <div className={`flex items-center justify-center transition-all duration-300 ${
-          isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-        }`}>
-          <JudgeCard 
+        <div className={`flex items-center justify-center transition-all duration-300 opacity-100 scale-100`}>
+          <JudgeCard
             title={judgeItems[0]?.title || "Loading..."}
             handleJudged={handleJudged}
-            imageData={judgeItems[0]?.generated_image || "https://via.placeholder.com/150"}
+            imageSrc={judgeItems[judgedCount*2 + 0]?.gen_img_src || "https://via.placeholder.com/150"}
             isLeft={true}
-            isSelected={selectedCard === 1}
-            isDisabled={isTransitioning}
+            selection={selection}
           />
 
-          <div className="min-h-[400px] h-max w-[2px] rounded-full bg-white/30 mx-4"/>
+          <div className="min-h-[400px] h-max w-[2px] rounded-full bg-white/30 mx-4" />
 
-          <JudgeCard 
+          <JudgeCard
             title={judgeItems[1]?.title || "Loading..."}
             handleJudged={handleJudged}
-            imageData={judgeItems[1]?.generated_image || "https://via.placeholder.com/150"}
+            imageSrc={judgeItems[judgedCount*2 + 1]?.gen_img_src || "https://via.placeholder.com/150"}
             isLeft={false}
-            isSelected={selectedCard === 2}
-            isDisabled={isTransitioning}
+            selection={selection}
           />
         </div>
 
         <button
-          onClick={() => handleJudged(1)}
-          disabled={isTransitioning}
-          className={`mt-8 text-white bg-[#3E3E3E] rounded-full py-3 px-6 transition-all duration-200 ${
-            isTransitioning 
-              ? 'opacity-50 cursor-not-allowed' 
-              : 'hover:bg-[#4E4E4E] active:scale-95'
-          }`}
+          onClick={() => handleJudged(0)}
+          className={`mt-8 text-white bg-[#3E3E3E] rounded-full py-2 px-4 transition-all duration-200 hover:bg-[#4E4E4E] active:scale-95`}
         >
           Too tough
         </button>

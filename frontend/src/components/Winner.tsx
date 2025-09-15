@@ -18,38 +18,14 @@ export default function Winner() {
         setLoading(true)
         setError(null)
         
-        const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/getWinners')
-        console.log('Response status:', response.status)
-        console.log('Response ok:', response.ok)
-        
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('Response not ok:', errorText)
-          throw new Error(`HTTP ${response.status}: ${errorText}`)
-        }
-        
+        const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/winners`);
         const data = await response.json()
-        console.log('Raw API response:', data)
         
-        if (!data.data || !Array.isArray(data.data)) {
-          throw new Error('Invalid response format: data.data is not an array')
-        }
-        
-        if (data.data.length === 0) {
-          console.log('No winners found in database')
-          setError('No submissions found yet. Create some outfits first!')
-          setLoading(false)
-          return
-        }
-        
-        const sortedData = data.data.sort((a: any, b: any) => b.elo - a.elo)
-        const topThree = sortedData.slice(0, 3)
-        console.log('Top 3 Winners:', topThree)
-        setWinners(topThree)
-        setLoading(false)
+        setWinners(data.data)
       } catch (error) {
         console.error('Error fetching winners:', error)
         setError(error instanceof Error ? error.message : 'Failed to load winners')
+      } finally {
         setLoading(false)
       }
     }
@@ -134,48 +110,56 @@ export default function Winner() {
   }
   
   return (
-    <div className='min-h-screen bg-[#0D0D0D] px-2 text-white flex flex-col items-center'>
+    <div className='min-h-screen bg-[#0D0D0D] px-2 text-white'>
       <CanvasImageView 
-        canvasImage={currentWinner.img} 
-        genImage={currentWinner.generated_image}
+        canvasImage={currentWinner.canvas_src} 
+        genImage={currentWinner.gen_img_src}
       />
-      <p className='text-6xl font-semibold mt-12 mb-6'>
+      <p className='text-4xl font-semibold mt-8 text-center'>
         {
-          winnerInView === 0 ? '🥇' 
-          : winnerInView === 1 ? '🥈'
-          : '🥉'
+          winnerInView === 0 
+            ? '🥇' 
+            : winnerInView === 1 
+              ? '🥈'
+              : '🥉'
         }
         {currentWinner.title}
       </p>
-      <div className="bg-black border-t border-gray-800 pb-8">
-        <div className="flex items-center justify-between space-x-4 mt-6">
+
+      <div className="fixed bottom-0 left-0 right-0 p-6">
+        <div className="flex items-center justify-between mb-0">
           <button
             onClick={handlePreviousWinner}
-            className="text-white bg-[#3E3E3E] rounded-full py-2 px-4"
+            
+            className="w-20 text-white bg-[#3E3E3E] rounded-full py-2 text-center"
           >
             Back
           </button>
           <button 
             onClick={handleViewProducts}
-            className="text-black bg-[#FFFFFF] rounded-full py-2 px-4"
+            className="w-32 text-black bg-[#FFF] rounded-full py-2 text-center"
           >
             View Products
           </button>
           <button
             onClick={handleNextWinner}
-            className="text-white bg-[#5433EB] rounded-full py-2 px-4"
+            className="w-20 text-white bg-[#5433EB] rounded-full py-2 text-center"
           >
-            Next
+            {
+              winnerInView >= 2
+                ? 'Done'
+                : 'Next'
+            }
           </button>
         </div>
       </div>
 
       {/* Product List Modal */}
-      <ProductListModal
+      {/* <ProductListModal
         productIds={currentWinner.product_ids || []}
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
-      />
+      /> */}
     </div>
   )
 }

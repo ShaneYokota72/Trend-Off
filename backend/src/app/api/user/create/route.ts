@@ -3,29 +3,20 @@ import supabase from "@/util/supabase";
 
 export async function POST(req: NextRequest) {
     try {
-        const { 
-            uid, 
-            user_name, 
-            title, 
-            canvas_src,
-            gen_img_src, 
-            product_ids 
-        } = await req.json();
+        const { user_name } = await req.json();
 
         const { data, error } = await supabase
-            .from("Entry")
-            .insert({ 
-                uid, 
-                user_name, 
-                title, 
-                canvas_src, 
-                gen_img_src, 
-                product_ids 
-            });
+            .from("User")
+            .insert({ user_name: user_name })
+            .select()
+            .single();
 
         if (error) {
             throw new Error(error.message);
         }
+
+        console.log('User created:', data);
+        console.log('User creation error:', error);
 
         return NextResponse.json({ data });
     } catch (error) {
