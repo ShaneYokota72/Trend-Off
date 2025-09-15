@@ -7,16 +7,19 @@ import SlidingItems from './SlidingItems'
 export function Landing() {
   const navigation = useNavigateWithTransition()
   const { products } = usePopularProducts({ first: 8 })
-  const { todayPrompt } = useContext(TrendOffContext)
+  const { user, todayPrompt } = useContext(TrendOffContext)
 
   const handleStartChallenge = async () => {
-    document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
-    navigation('/whiteboard')
+    const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/completed-challenge?uid=${user?.id}`);
+    const data = await response.json();
 
-
-    // const res = await fetch(`${process.env.TREND_OFF_ENDPOINT}/api/getPrompt`)
-    // const data = await res.json()
-    // console.log('Fetched prompt data:', data)
+    if (data.count) {
+      document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+      navigation('/results');
+    } else {
+      document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
+      navigation('/whiteboard')
+    }
   }
 
   return (
