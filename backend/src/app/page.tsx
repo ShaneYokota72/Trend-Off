@@ -1,14 +1,9 @@
 import React from 'react';
 
-"use client";
-
-
-const Page: React.FC = () => {
+export default function page() {
   return (
     <div>
       Trend Off
     </div>
-  );
-};
-
-export default Page;
+  )
+}
