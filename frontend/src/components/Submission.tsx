@@ -56,7 +56,7 @@ export function Submission() {
   if (imageGenerationStatus !== 'completed') {
     return (
       <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center text-white">
-        <div className="relative">
+        <div className="relative flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
           <p className="mt-4 text-lg font-medium">Generating image...</p>
         </div>

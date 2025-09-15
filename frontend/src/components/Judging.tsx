@@ -26,7 +26,7 @@ export function Judging() {
   const [totalJudgeCount, setTotalJudgeCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [selection, setSelection] = useState<SelectedCard>(null)
-  const { todayPrompt, imageGenerationStatus } = useContext(TrendOffContext)
+  const { todayPrompt } = useContext(TrendOffContext)
 
   useEffect(() => {
     const getJudgeItems = async () => {
@@ -48,6 +48,7 @@ export function Judging() {
   }, [])
 
   const handleJudged = async (chosenItem: Number) => {
+    console.log('Chosen item:', chosenItem)
     if (chosenItem === 0) { // "Too tough to choose" case
       setSelection(null)
       await new Promise(resolve => setTimeout(resolve, 250));
@@ -61,23 +62,25 @@ export function Judging() {
     }
 
     setSelection(chosenItem === 1 ? "left" : "right")
+    console.log('stopping for 750ms for animation')
     await new Promise(resolve => setTimeout(resolve, 750));
+    console.log('resuming after delay')
 
     // judge api call
-    await fetch(`${process.env.TREND_OFF_ENDPOINT}/api/judge`, {
+    await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/judge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        winnerId: chosenItem === 1 ? judgeItems[0].id : judgeItems[1].id,
-        loserId: chosenItem === 1 ? judgeItems[1].id : judgeItems[0].id
+        winnerId: chosenItem === 1 ? judgeItems[judgedCount*2 + 0].id : judgeItems[judgedCount*2 + 1].id,
+        loserId: chosenItem === 1 ? judgeItems[judgedCount*2 + 1].id : judgeItems[judgedCount*2 + 0].id
       })
     })
 
     // go next page or next judge
     if (judgedCount + 1 >= totalJudgeCount) {
-      while(imageGenerationStatus !== 'completed') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      // while(imageGenerationStatus !== 'completed') {
+      //   await new Promise(resolve => setTimeout(resolve, 1000));
+      // }
       document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
       navigation('/submission')
     } else {
@@ -105,7 +108,7 @@ export function Judging() {
               {[...Array(totalJudgeCount)].map((_, i) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${i + 1 < judgedCount ? 'bg-[#5433EB]' : 'bg-white/20'}`}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${i < judgedCount ? 'bg-[#5433EB]' : 'bg-white/20'}`}
                 />
               ))}
             </div>
@@ -116,7 +119,7 @@ export function Judging() {
           <JudgeCard
             title={judgeItems[0]?.title || "Loading..."}
             handleJudged={handleJudged}
-            imageSrc={judgeItems[0]?.gen_img_src || "https://via.placeholder.com/150"}
+            imageSrc={judgeItems[judgedCount*2 + 0]?.gen_img_src || "https://via.placeholder.com/150"}
             isLeft={true}
             selection={selection}
           />
@@ -126,7 +129,7 @@ export function Judging() {
           <JudgeCard
             title={judgeItems[1]?.title || "Loading..."}
             handleJudged={handleJudged}
-            imageSrc={judgeItems[1]?.gen_img_src || "https://via.placeholder.com/150"}
+            imageSrc={judgeItems[judgedCount*2 + 1]?.gen_img_src || "https://via.placeholder.com/150"}
             isLeft={false}
             selection={selection}
           />

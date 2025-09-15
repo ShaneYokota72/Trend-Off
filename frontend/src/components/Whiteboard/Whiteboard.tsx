@@ -225,7 +225,7 @@ export function Whiteboard() {
               <Input 
                 placeholder="🔍 Search products" 
                 value={searchQuery}
-                className='w-9/10 rounded-4xl bg-white text-center' // absolute z-10 bottom-16 
+                className='w-9/10 rounded-4xl bg-white text-center'
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     setSubmittedQuery(searchQuery);
