@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         
         const { data, error } = await supabase
             .from("Entry")
-            .select("id, title, canvas_src, gen_img_src")
+            .select("id, product_ids, title, canvas_src, gen_img_src")
             .gte('created_at', startPst.toISOString())
             .lte('created_at', endPst.toISOString())
             .order('elo', { ascending: false })

@@ -21,6 +21,7 @@ export type Database = {
           image_gen_prompt: string | null
           prompt: string
           prompt_date: string
+          total_entry: number | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           image_gen_prompt?: string | null
           prompt: string
           prompt_date: string
+          total_entry?: number | null
         }
         Update: {
           created_at?: string
@@ -35,6 +37,7 @@ export type Database = {
           image_gen_prompt?: string | null
           prompt?: string
           prompt_date?: string
+          total_entry?: number | null
         }
         Relationships: []
       }
@@ -82,6 +85,8 @@ export type Database = {
           created_at: string
           friends: string[]
           id: string
+          last_submission_date: string | null
+          streak: number
           uid: number | null
           user_name: string
         }
@@ -89,6 +94,8 @@ export type Database = {
           created_at?: string
           friends?: string[]
           id?: string
+          last_submission_date?: string | null
+          streak?: number
           uid?: number | null
           user_name: string
         }
@@ -96,6 +103,8 @@ export type Database = {
           created_at?: string
           friends?: string[]
           id?: string
+          last_submission_date?: string | null
+          streak?: number
           uid?: number | null
           user_name?: string
         }
@@ -106,6 +115,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_entry_percentile: {
+        Args: {
+          end_ts: string
+          p_date: string
+          p_uid: string
+          start_ts: string
+        }
+        Returns: number
+      }
       get_two_candidates: {
         Args: { end_ts: string; start_ts: string }
         Returns: {
@@ -121,6 +139,10 @@ export type Database = {
           new_elo: number
           new_vote_count: number
         }[]
+      }
+      update_user_streak: {
+        Args: { p_today: string; p_uid: string; p_yesterday: string }
+        Returns: number
       }
     }
     Enums: {

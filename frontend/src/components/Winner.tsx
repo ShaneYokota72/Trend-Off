@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import CanvasImageView from './CanvasImageView'
-import { ProductListModal } from './ProductListModal'
 import {useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE} from '@shopify/shop-minis-react'
+import CanvasImageView from './CanvasImageView'
+import ProdudctPopup from './Popups/ProdudctPopup'
 
 export default function Winner() {
   const navigation = useNavigateWithTransition()
@@ -33,7 +33,7 @@ export default function Winner() {
   },[])
 
   const handleNextWinner = () => {
-    if(winnerInView >= 3) {
+    if(winnerInView >= winners.length - 1) {
       document.documentElement.setAttribute(DATA_NAVIGATION_TYPE_ATTRIBUTE, NAVIGATION_TYPES.forward);
       navigation('/results')
       return
@@ -146,7 +146,7 @@ export default function Winner() {
             className="w-20 text-white bg-[#5433EB] rounded-full py-2 text-center"
           >
             {
-              winnerInView >= 2
+              winnerInView >= winners.length - 1
                 ? 'Done'
                 : 'Next'
             }
@@ -154,12 +154,11 @@ export default function Winner() {
         </div>
       </div>
 
-      {/* Product List Modal */}
-      {/* <ProductListModal
+      <ProdudctPopup
+        showPopUp={showProductModal}
+        setShowPopUp={setShowProductModal}
         productIds={currentWinner.product_ids || []}
-        isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
-      /> */}
+      />  
     </div>
   )
 }

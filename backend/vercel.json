@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/log-total-submission",
+      "schedule": "59 6 * * *"
+    }
+  ]
+}
