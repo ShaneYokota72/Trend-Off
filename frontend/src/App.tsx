@@ -5,10 +5,10 @@ import {Whiteboard} from './components/Whiteboard/Whiteboard'
 import {Submission} from './components/Submission'
 import {Judging} from './components/Judging'
 import {Results} from './components/Results'
-import {Calendar} from './components/Calendar'
 import Winner from './components/Winner'
-import {CalendarPreview} from './components/CalendarPreview'
 import { TrendOffProvider } from './context/TrendOffContext'
+// import {Calendar} from './components/Calendar'
+// import {CalendarPreview} from './components/CalendarPreview'
 
 export function App() {
   return (
@@ -20,8 +20,8 @@ export function App() {
         <Route path="/submission" element={<Submission />} />
         <Route path="/results" element={<Results />} />
         <Route path="/winners" element={<Winner />} />
-        <Route path="/calendar/:friendId" element={<Calendar />} />
-        <Route path="/calendar-preview/:friendId" element={<CalendarPreview />} />
+        {/* <Route path="/calendar/:friendId" element={<Calendar />} />
+        <Route path="/calendar-preview/:friendId" element={<CalendarPreview />} /> */}
       </Routes>
     </TrendOffProvider>
   )

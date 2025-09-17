@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigateWithTransition, NAVIGATION_TYPES, DATA_NAVIGATION_TYPE_ATTRIBUTE } from '@shopify/shop-minis-react'
 import { useParams } from 'react-router'
-import CanvasImageView from './CanvasImageView'
+import CanvasImageView from '../CanvasImageView'
 
 interface Friend {
   id: string;
@@ -65,7 +65,7 @@ export function CalendarPreview() {
     const fetchSeventhMostRecent = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://shop-mini-hack-tau.vercel.app/api/getSeventh')
+        const response = await fetch('http://localhost:8080/api/getSeventh')
         if (!response.ok) {
           throw new Error('Network response was not ok')
         }
