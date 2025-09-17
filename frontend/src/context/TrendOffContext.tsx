@@ -13,6 +13,7 @@ interface UserData {
 interface TrendOffContextType {
     user: UserData | null;
     todayPrompt: string;
+    yesterdayPrompt: string;
     productIds: string[];
     setProductIds: (ids: string[]) => void;
     canvasImgSrc: string;
@@ -25,6 +26,7 @@ interface TrendOffContextType {
 export const TrendOffContext = createContext<TrendOffContextType>({
     user: null,
     todayPrompt: "",
+    yesterdayPrompt: "",
     productIds: [],
     setProductIds: () => {},
     canvasImgSrc: "",
@@ -37,6 +39,7 @@ export const TrendOffContext = createContext<TrendOffContextType>({
 export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<UserData | null>(null);
     const [todayPrompt, setTodayPrompt] = useState<string>("");
+    const [yesterdayPrompt, setYesterdayPrompt] = useState<string>("");
     const [imageGenPrompt, setImageGenPrompt] = useState<string>("");
     const [productIds, setProductIds] = useState<string[]>([]);
     const [canvasImgSrc, setCanvasImgSrc] = useState<string>("");
@@ -75,10 +78,13 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     useEffect(() => {
         const getPrompt = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getPrompt`);
+                const response = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getPrompt/today`);
                 const { data } = await response.json();
+                const response2 = await fetch(`${import.meta.env.VITE_TREND_OFF_ENDPOINT}/api/getPrompt/yesterday`);
+                const { data: yesterdayData } = await response2.json();
                 setTodayPrompt(data.prompt || "");
                 setImageGenPrompt(data.image_gen_prompt || "");
+                setYesterdayPrompt(yesterdayData.prompt || "");
             } catch (error) {
                 console.error('Error fetching prompt:', error);
             }
@@ -154,7 +160,7 @@ export const TrendOffProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [canvasImgSrc]);
 
     return (
-        <TrendOffContext.Provider value={{ user, todayPrompt, productIds, setProductIds, canvasImgSrc, setCanvasImgSrc, imageGenerationStatus, setImageGenerationStatus, generatedImageUrl}}>
+        <TrendOffContext.Provider value={{ user, todayPrompt, yesterdayPrompt, productIds, setProductIds, canvasImgSrc, setCanvasImgSrc, imageGenerationStatus, setImageGenerationStatus, generatedImageUrl}}>
             {children}
         </TrendOffContext.Provider>
     );

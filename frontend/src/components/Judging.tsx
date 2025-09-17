@@ -10,12 +10,12 @@ type JudgingItem = {
 }
 
 // Loading Spinner Component
-const LoadingSpinner = ({ todayPrompt }: { todayPrompt: string }) => (
+const LoadingSpinner = ({ yesterdayPrompt }: { yesterdayPrompt: string }) => (
   <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center text-white">
     <div className="relative">
       <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
     </div>
-    <p className="mt-4 text-lg font-medium">Loading {todayPrompt}...</p>
+    <p className="mt-4 text-lg font-medium">Loading {yesterdayPrompt}...</p>
   </div>
 )
 
@@ -26,7 +26,7 @@ export function Judging() {
   const [totalJudgeCount, setTotalJudgeCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [selection, setSelection] = useState<SelectedCard>(null)
-  const { todayPrompt } = useContext(TrendOffContext)
+  const { yesterdayPrompt } = useContext(TrendOffContext)
 
   useEffect(() => {
     const getJudgeItems = async () => {
@@ -92,14 +92,14 @@ export function Judging() {
   }
 
   if (isLoading) {
-    return <LoadingSpinner todayPrompt={todayPrompt}/>
+    return <LoadingSpinner yesterdayPrompt={yesterdayPrompt}/>
   }
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] px-2 text-white">
       <div className="max-w-2xl mx-auto flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold text-white text-center mt-12">
-          {todayPrompt}
+          {yesterdayPrompt}
         </h1>
         <div className="mt-2 mb-8">
           <div className="flex items-center gap-2">

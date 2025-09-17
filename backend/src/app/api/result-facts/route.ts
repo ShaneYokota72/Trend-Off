@@ -33,17 +33,23 @@ export async function GET(request: NextRequest) {
             .select('streak')
             .eq('id', uid)
             .single();
+
+        const facts = []
+        if(percentile) {
+            facts.push({
+                emoji: "👏",
+                subtitle: "Great Performance!",
+                text: `You are in the ${percentile}th percentile!`
+            })
+            facts.push({
+                emoji: "🔥",
+                subtitle: "You're on a streak!",
+                text: `You have a ${streak?.streak}-day streak!`
+            })
+        }
         
-        return NextResponse.json({ facts: [{
-            emoji: "👏",
-            subtitle: "Great Performance!",
-            text: `You are in the ${percentile}th percentile!`
-        }, {
-            emoji: "🔥",
-            subtitle: "You're on a streak!",
-            text: `You have a ${streak?.streak}-day streak!`
-        }] });
-        
+        return NextResponse.json({ facts });
+
     } catch (error) {
         console.log('error:', error);
         return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
