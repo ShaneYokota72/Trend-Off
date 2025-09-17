@@ -44,6 +44,11 @@ export function Results() {
         <h1 className='text-white text-center font-bold text-3xl mb-6'>
           You crushed it!
         </h1>
+        {
+          facts.length > 0 && (
+            <p className='text-white text-center mb-6 px-4'>Here are some fun facts!</p>
+          )
+        }
 
         <ReactSimplyCarousel
           activeSlideIndex={currentCardIndex}
@@ -71,7 +76,13 @@ export function Results() {
               </div>
             ))
           ) : (
-            <div className="text-white">No facts available</div>
+            <div className='px-4'>
+                <div className="w-56 h-56 flex flex-col gap-2 items-center justify-center p-4 bg-[#5433EB] rounded-2xl text-white">
+                  <div className="text-center text-5xl mb-4">😆</div>
+                  <div className="text-center text-2xl font-semibold">Welcome Back!</div>
+                  <div className="text-center">We've missed you! Time to trend off again!</div>
+                </div>
+              </div>
           )}
         </ReactSimplyCarousel>
         
